@@ -18,16 +18,12 @@ int main()
     keypad(stdscr, TRUE);
     noecho(); 
 
-    int currx;
     while(ch != 'q') {
         
         
         if (ch >= 32 && ch <= 126)
         {
-            move(event.y, currx);
             printw("%c", ch);
-            currx += 1;
-            move(event.y, event.x); 
         }
         //grab mouse posiition
         //this statement pulls out the printing of any mouse related characters. we only wnat ch to be printed if it originated from the keyboard 
