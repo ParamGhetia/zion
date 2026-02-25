@@ -5,37 +5,46 @@ int main()
 {
     int ch = 0; 
     bool normalMode = false;
+    //what is usage of this?
 
     //initialization statements
     initscr();
+    //this line is very importnat it alows the escape sequences (spit out by mouse position to be read)
+    keypad(stdscr, TRUE);
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    MEVENT event;
+    printf("\033[?1003h\n"); // Enable all mouse motions
     raw();
     keypad(stdscr, TRUE);
     noecho(); 
 
+    int currx;
     while(ch != 'q') {
-        if (ch == 27) {
-            normalMode = true;
-        }
-
-        if (normalMode) {
-            int y, x;
-            getyx(stdscr, y, x);
-            switch (ch) {
-                case 'k': move(y-1, x); break;
-                case 'j': move(y+1, x); break;
-                case 'h': move(y, x-1); break;
-                case 'l': move(y, x+1); break;
-                case 'i': normalMode = false; break;
-            }
-        } else {
-            // insert mode — print the character
+        
+        
+        if (ch >= 32 && ch <= 126)
+        {
+            move(event.y, currx);
             printw("%c", ch);
+            currx += 1;
+            move(event.y, event.x); 
         }
-
+        //grab mouse posiition
+        //this statement pulls out the printing of any mouse related characters. we only wnat ch to be printed if it originated from the keyboard 
+        else if(ch == KEY_MOUSE) {
+            if(getmouse(&event) == OK) {
+                //move there
+                move(event.y, event.x);
+                mvprintw(0, 0, "Mouse is at Row: %d, Col: %d   ", event.y, event.x);
+                move(event.y, event.x);
+                currx = event.x;
+            }
+        }
         refresh();
         ch = getch();
     }
 
+    printf("\033[?1003l\n");
     endwin();
     //mouse hover and position is returend
     //typewriter effect cursor dosent move
