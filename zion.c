@@ -1,9 +1,38 @@
 #include <ncurses.h>
 #include <stdbool.h>
 
+int ch = 0;
+
+void zoom() {
+    int top = 0, left = 0, bot = LINES-1, right = COLS-1;
+    int ch;
+
+    while (1) {
+        // draw corners of current quadrant
+        mvaddch(top, left, (chtype)219);
+        mvaddch(top, right, (chtype)219);
+        mvaddch(bot, left, (chtype)219);
+        mvaddch(bot, right, (chtype)219);
+        move(top, left);
+        refresh();
+
+        ch = getch();
+
+        int midY = (top + bot) / 2;
+        int midX = (left + right) / 2;
+
+        switch(ch) {
+            case 'e': bot = midY; right = midX; break; // top-left
+            case 'y': bot = midY; left = midX;  break; // top-right
+            case 'c': top = midY; right = midX; break; // bot-left
+            case 'b': top = midY; left = midX;  break; // bot-right
+            default: return; // exit zoom on anything else
+        }
+    }
+}
+
 int main()
 {
-    int ch = 0; 
     bool normalMode = false;
     //what is usage of this?
 
@@ -20,21 +49,29 @@ int main()
 
     while(ch != 'q') {
         
-        
-        if (ch >= 32 && ch <= 126)
+        if (normalMode == false && ch >= 32 && ch <= 126)
         {
+            //in every function that writes output jus thave a mirror function that takes some arguments to decide what is being written and update the text file accordingly.
             printw("%c", ch);
         }
         //grab mouse posiition
         //this statement pulls out the printing of any mouse related characters. we only wnat ch to be printed if it originated from the keyboard 
-        else if(ch == KEY_MOUSE) {
+        else if(normalMode == false && ch == KEY_MOUSE) {
             if(getmouse(&event) == OK) {
                 //move there
                 move(event.y, event.x);
                 mvprintw(0, 0, "Mouse is at Row: %d, Col: %d   ", event.y, event.x);
                 move(event.y, event.x);
-                currx = event.x;
             }
+        }
+        else if(ch == 27)
+        {
+            normalMode = !normalMode;
+        }
+        else if(normalMode == true)
+        {
+            if (ch == 91)
+                zoom();
         }
         refresh();
         ch = getch();
