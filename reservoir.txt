@@ -1,8 +1,1 @@
-22,79,testthisisnotgreat
-31,66,thisisnotgreat`
-23,59,thisisatest
-33,97,thisisatest
-18,40,test
-11,40,so this should've been set
-23,58,so you can see it in real time
-5,52,yooo
+6,68,test please work
