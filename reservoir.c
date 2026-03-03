@@ -76,8 +76,10 @@ void loadReservoir() {
 }
 
 void saveReservoir() {
+    //wb wipes the file and writes anew
     FILE *f = fopen("reservoir.zion", "wb");
     if (!f) return;
+    //just make entrycount to 0 so it will effecitvely wipe it. you just overwrite your data since entrycount is 0 it wont write any lines at save which wont allow any data to even persist and durin the runtime it would get overwritten and not saved.
     fwrite(entries, sizeof(Entry), entryCount, f);
     fclose(f);
 }

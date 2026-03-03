@@ -1,6 +1,7 @@
 #include <ncurses.h>
-#include "commands.h"
+#include <stdbool.h>
 #include "reservoir.h"
+#include "commands.h"
 
 void zoom() {
     int top = 0, left = 0, bot = LINES-1, right = COLS-1;
@@ -28,28 +29,62 @@ void zoom() {
     }
 }
 
-Entry *selections[64]; 
+int selections[64]; 
 int selectionCount = 0;
 
-void selectAtCursor(int y, int x) {
-    int indexOfEntry = searchEntry(y, x);
-    if (indexOfEntry == -1) return;
+//ALL SELECTIONS AND STUFF SHOULD BE MADE BASED ON ID NOT BASED ON INDEX OR POINTER BECAUSE THOSE CHANGE WITH CHANGES TO ARRAY
+//in terms of storiung everything should be stored with id but for usage we use this function to convert to index
+int getIndexByID(int id) {
+    for (int i = 0; i < entryCount; i++)
+        if (entries[i].entryID == id)
+            return i;
+    return -1;
+}
 
+void selectAtCursor(int y, int x) {
+    int idx = searchEntry(y, x);
+    if (idx == -1) return;
+    addSelection(entries[idx].entryID);
+}
+
+void addSelection(int id) {
     for (int i = 0; i < selectionCount; i++) {
-        if (selections[i] == &entries[indexOfEntry]) {
-            //opposite of below just resets it
+        if (selections[i] == id) {
             selections[i] = selections[--selectionCount];
-            mvprintw(entries[indexOfEntry].y, entries[indexOfEntry].x, "%s", entries[indexOfEntry].text);
+            highlighter(id, false);
             return;
         }
     }
-
-    //this reprints the thing if it was selected 
     if (selectionCount < 64) {
-        selections[selectionCount++] = &entries[indexOfEntry];
-        //cool function to print things inverted.
-        attron(A_REVERSE);
-        mvprintw(entries[indexOfEntry].y, entries[indexOfEntry].x, "%s", entries[indexOfEntry].text);
-        attroff(A_REVERSE);
+        selections[selectionCount++] = id;
+        highlighter(id, true);
+    }
+}
+
+void clearSelections() {
+    for (int i = 0; i < selectionCount; i++)
+        highlighter(selections[i], false);
+    selectionCount = 0;
+}
+
+void highlighter(int id, bool highlight) {
+    int idx = getIndexByID(id);
+    if (idx == -1) return;
+    if (highlight) attron(A_REVERSE);
+    if (entries[idx].parentID != -1)
+        mvprintw(entries[idx].y, entries[idx].x, "%c %s", 45, entries[idx].text);
+    else
+        mvprintw(entries[idx].y, entries[idx].x, "%s", entries[idx].text);
+    if (highlight) attroff(A_REVERSE);
+}
+
+void adoptEntry() {
+    if (selectionCount < 2) return;
+    for (int i = 1; i < selectionCount; i++) {
+        int idx = getIndexByID(selections[i]);
+        int parentIdx = getIndexByID(selections[0]);
+        if (idx == -1 || parentIdx == -1) continue;
+        entries[idx].parentID = entries[parentIdx].entryID;
+        mvprintw(entries[idx].y, entries[idx].x, "%c %s", 45, entries[idx].text);
     }
 }

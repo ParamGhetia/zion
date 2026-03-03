@@ -8,14 +8,17 @@ bool normalMode = false;
 int ch = 0;
 
 // return codes
-#define OPERATION_QUIT   1
-#define INPUT_PRINTABLE  2
-#define INPUT_DELETE     3
-#define INPUT_MOUSE      4
-#define INPUT_ESC        5
-#define COMMAND_ZOOM     6
-#define COMMAND_SELECT   7
-#define INPUT_OTHER      0
+#define OPERATION_QUIT      1
+#define INPUT_PRINTABLE     2
+#define INPUT_DELETE        3
+#define INPUT_MOUSE         4
+#define INPUT_ESC           5
+#define COMMAND_ZOOM        6
+#define COMMAND_SELECT      7
+#define COMMAND_ADOPT       8
+#define COMMAND_DESELECTALL 9
+#define OPERATION_DELETEALL 10
+#define INPUT_OTHER         0
 
 //standard convention for defining ctrl+k input. Just k with mask off of bits.
 #define CTRL(k) ((k) & 0x1f)
@@ -56,6 +59,9 @@ int interpretInput(int ch) {
     if (!normalMode && ch >= 32 && ch <= 126)              return INPUT_PRINTABLE;
     if (!normalMode && (ch == 127 || ch == KEY_BACKSPACE)) return INPUT_DELETE;
     if (normalMode && (ch == 115))                         return COMMAND_SELECT;
+    if (normalMode && (ch == 9))                           return COMMAND_ADOPT;
+    if (normalMode && (ch == 83))                          return COMMAND_DESELECTALL;
+    if (normalMode && (ch == 120))                         return OPERATION_DELETEALL;
     return INPUT_OTHER;
 }
 
@@ -94,6 +100,10 @@ int main() {
                 if (!normalMode && bufLen > 0)
                     reservoirDump(startY, startX, buffer, &bufLen);
                 normalMode = !normalMode;
+                getyx(stdscr, y, x);
+                if (normalMode) mvprintw(0,0,"normie");
+                if (!normalMode) mvprintw(0,0,"coolio");
+                move(y,x);
                 break;
 
             case INPUT_MOUSE:
@@ -101,6 +111,8 @@ int main() {
                     if (!normalMode && bufLen > 0)
                         reservoirDump(startY, startX, buffer, &bufLen);
                     move(event.y, event.x);
+                    if (normalMode && (event.bstate & BUTTON1_CLICKED))
+                        selectAtCursor(event.y, event.x);
                 }
                 break;
 
@@ -112,6 +124,21 @@ int main() {
                 getyx(stdscr, y, x);
                 selectAtCursor(y, x);
                 break;
+            
+            case COMMAND_DESELECTALL:
+                clearSelections();
+                break;
+
+            case COMMAND_ADOPT:
+                adoptEntry();
+                break;
+
+            case OPERATION_DELETEALL:
+                //dont need extern entrycount because its already said in resovoir.h and this file inherits that so it knows entryCount is somewhere.
+                entryCount = 0;
+                clear();
+                refresh();
+                break;
         }
 
         refresh();
@@ -122,11 +149,3 @@ int main() {
     endwin();
     return 0;
 }
-// need to figure out how to make it so it prints onto screen from text file. 
-// ALso implement thing where it sorts the text file when you press q. 
-// next need to figure out how to allow for ctrl moving stuff
-
-//ideally this would replace my scratchpad and like i can have a daily text file
-// I would ujst have keyboard shortcut to automatically open the scratpad whenever I want
-//it would be fun to make sound effects for it like using audcacity but i should make them all vocally that would be funny
-//you can also have empty text file in which case it will print a cool ascii thing pertaining to the matrix and then on any input it will erase that 
